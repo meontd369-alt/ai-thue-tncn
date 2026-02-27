@@ -50,7 +50,7 @@ if st.button("🔍 Bắt Đầu Quét & Phân Tích Rủi Ro"):
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-pro')
 
             with st.spinner("⏳ Chuyên gia AI đang đối chiếu dữ liệu với Luật Thuế. Vui lòng đợi..."):
                 
@@ -106,4 +106,5 @@ if st.button("🔍 Bắt Đầu Quét & Phân Tích Rủi Ro"):
         except Exception as e:
 
             st.error(f"Đã xảy ra lỗi hệ thống: {e}")
+
 
