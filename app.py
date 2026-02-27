@@ -3,109 +3,96 @@ import google.generativeai as genai
 import tempfile
 import os
 
-# 1. Cấu hình giao diện chuẩn nhận diện thương hiệu
+# 1. Cấu hình giao diện Trạm Tuân Thủ Thông Minh
 st.set_page_config(page_title="AI Thuế TNCN - Trạm Tuân Thủ Thông Minh", page_icon="🛡️", layout="wide")
 
+# CSS Nhận diện thương hiệu (Xanh Navy & Vàng Gold)
 st.markdown("""
     <style>
     .main {background-color: #f8f9fa;}
-    h1, h2, h3 {color: #001F5B;} /* Xanh Navy */
-    .stButton>button {background-color: #D4AF37; color: #001F5B; font-weight: bold; border-radius: 5px; width: 100%; border: none; padding: 10px;} /* Vàng Gold */
-    .stButton>button:hover {background-color: #b5952f; color: #ffffff;}
-    .info-box {background-color: #e9ecef; padding: 15px; border-left: 5px solid #001F5B; border-radius: 4px; margin-bottom: 20px;}
+    h1, h2, h3 {color: #001F5B;} 
+    .stButton>button {background-color: #D4AF37; color: #001F5B; font-weight: bold; border-radius: 8px; width: 100%; border: none; padding: 12px;}
+    .stButton>button:hover {background-color: #b5952f; color: #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.2);}
+    .status-box {background-color: #ffffff; padding: 20px; border-radius: 10px; border-left: 6px solid #D4AF37; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px;}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ AI Chẩn Đoán Rủi Ro Thuế TNCN")
-st.markdown("**Đơn vị phát triển:** Trạm Tuân Thủ Thông Minh (Smart Compliance Hub)")
+st.title("🛡️ AI Thuế TNCN - Smart Compliance Hub")
+st.markdown('<div class="status-box"><b>Hệ thống Chẩn đoán Rủi ro Thuế:</b> Chuyên rà soát bảng lương, phụ cấp và cấu trúc thu nhập để đảm bảo tính tuân thủ pháp lý cao nhất cho Doanh nghiệp.</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="info-box">Hệ thống tự động phân tích dữ liệu tiền lương, rà soát cấu trúc phụ cấp và đối chiếu với Luật Thuế TNCN hiện hành để phát hiện rủi ro truy thu/phạt vi phạm.</div>', unsafe_allow_html=True)
-
-# Lấy API Key từ "két sắt" của Streamlit
+# Lấy API Key từ Secrets
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
-# 2. Khu vực nhập liệu dữ liệu đầu vào
+# 2. Giao diện nhập liệu
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.subheader("Cách 1: Nhập dữ liệu nhanh")
+    st.subheader("📝 Nhập dữ liệu lương")
     salary_data = st.text_area(
-        "Nhập thông tin lương/phụ cấp hoặc dán (paste) dữ liệu từ Excel vào đây:", 
-        height=200,
-        placeholder="Ví dụ: \n- Nhân viên A: Lương cơ bản 10tr, phụ cấp xăng xe 5tr, ăn trưa 2tr, không người phụ thuộc.\n- Lương gộp: 17tr..."
+        "Dán dữ liệu từ Excel hoặc mô tả cấu trúc lương tại đây:", 
+        height=250,
+        placeholder="VD: Nguyễn Văn A, Lương 20tr, Phụ cấp xăng xe 5tr..."
     )
 
 with col2:
-    st.subheader("Cách 2: Tải lên tài liệu")
-    st.info("Hỗ trợ định dạng: Hình ảnh (JPG, PNG), PDF hoặc Text (TXT, CSV).")
-    uploaded_file = st.file_uploader("Kéo thả file Bảng lương / Hợp đồng vào đây...", type=["jpg", "png", "pdf", "txt", "csv"])
+    st.subheader("📁 Tải tệp tài liệu")
+    st.info("Hệ thống hỗ trợ đọc trực tiếp: Ảnh chụp bảng lương, File PDF, BCTC hoặc Hợp đồng.")
+    uploaded_file = st.file_uploader("Kéo thả tài liệu vào đây...", type=["jpg", "png", "pdf", "txt", "csv"])
 
-# 3. Nút xử lý cốt lõi
+# 3. Xử lý phân tích chuyên sâu
 st.markdown("---")
-if st.button("🔍 Bắt Đầu Quét & Phân Tích Rủi Ro"):
+if st.button("🚀 KÍCH HOẠT QUÉT RỦI RO THUẾ"):
     if not api_key:
-        st.error("Hệ thống chưa được cấp API Key trong phần cài đặt bảo mật (Secrets).")
+        st.error("Lỗi: Chưa tìm thấy API Key trong cấu hình Secrets của Streamlit.")
     elif not salary_data and not uploaded_file:
-        st.error("Vui lòng cung cấp dữ liệu bằng cách nhập văn bản hoặc tải file lên!")
+        st.error("Vui lòng cung cấp dữ liệu đầu vào để AI bắt đầu làm việc.")
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            
+            # SỬ DỤNG MÔ HÌNH THẾ HỆ MỚI (Cập nhật theo danh sách của bạn)
+            model = genai.GenerativeModel('gemini-2.5-flash')
 
-            with st.spinner("⏳ Chuyên gia AI đang đối chiếu dữ liệu với Luật Thuế. Vui lòng đợi..."):
+            with st.spinner("⏳ Trí tuệ nhân tạo đang đối soát dữ liệu với Luật Thuế hiện hành..."):
                 
-                # Chuẩn bị dữ liệu gửi đi
-                contents_to_send = []
+                analysis_content = []
                 
-                # Prompt hệ thống khắt khe
-                prompt = """
-                Bạn là Chuyên gia Đánh giá Rủi ro Thuế TNCN cấp cao tại "Trạm Tuân Thủ Thông Minh". 
-                Nhiệm vụ của bạn là rà soát dữ liệu tiền lương/phụ cấp được cung cấp và chỉ ra các rủi ro pháp lý theo Luật Thuế TNCN hiện hành.
+                # Prompt nghiệp vụ chuyên sâu cho Trạm Tuân Thủ
+                system_prompt = """
+                Bạn là 'Chuyên gia Thuế AI' thuộc hệ thống Trạm Tuân Thủ Thông Minh (Smart Compliance Hub).
+                Nhiệm vụ: Phân tích dữ liệu tiền lương/thu nhập và cảnh báo rủi ro Thuế TNCN.
 
-                YÊU CẦU PHÂN TÍCH:
-                1. Tính hợp lý của Phụ cấp: Phát hiện các khoản phụ cấp quá cao so với lương cơ bản (có dấu hiệu trốn thuế).
-                2. Rủi ro truy thu: Chỉ ra các khoản thu nhập có khả năng bị cơ quan thuế bóc tách và tính thuế.
-                3. Thiếu sót hồ sơ: Đề xuất các giấy tờ/chứng từ cần thiết để bảo vệ chi phí hợp lý.
-
-                CẤU TRÚC BÁO CÁO (Trình bày bằng Markdown chuyên nghiệp):
-                ### 📊 1. TÓM TẮT TÌNH TRẠNG DỮ LIỆU
-                (Tóm tắt ngắn gọn cấu trúc thu nhập bạn đọc được)
-
-                ### 🚨 2. CÁC RỦI RO THUẾ TNCN PHÁT HIỆN ĐƯỢC
-                (Liệt kê các điểm bất thường, rủi ro truy thu, vi phạm tỷ lệ)
-
-                ### 💡 3. GIẢI PHÁP & KHUYẾN NGHỊ TỪ TRẠM TUÂN THỦ THÔNG MINH
-                (Đưa ra lời khuyên cụ thể để cơ cấu lại lương/phụ cấp cho hợp pháp và tối ưu)
+                CẤU TRÚC BÁO CÁO:
+                1. 🔍 ĐÁNH GIÁ TỔNG QUAN: Tóm tắt các nhóm thu nhập phát hiện được.
+                2. 🚨 CẢNH BÁO RỦI RO: 
+                   - Chỉ ra các khoản phụ cấp vượt định mức miễn thuế.
+                   - Cảnh báo các rủi ro truy thu do thiếu chứng từ hợp lệ.
+                   - Nhận diện các dấu hiệu lách luật BHXH qua lương.
+                3. 💡 KIẾN NGHỊ TUÂN THỦ: Đưa ra giải pháp điều chỉnh cấu trúc lương để tối ưu thuế một cách hợp pháp.
                 """
-                contents_to_send.append(prompt)
+                analysis_content.append(system_prompt)
 
-                # Nạp dữ liệu văn bản (nếu có)
                 if salary_data:
-                    contents_to_send.append(f"DỮ LIỆU KHÁCH HÀNG CUNG CẤP:\n{salary_data}")
+                    analysis_content.append(f"Dữ liệu nhập tay: {salary_data}")
 
-                # Nạp file upload (nếu có)
                 if uploaded_file:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
-                        tmp_file.write(uploaded_file.read())
-                        tmp_file_path = tmp_file.name
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp:
+                        tmp.write(uploaded_file.read())
+                        tmp_path = tmp.name
                     
-                    ai_file = genai.upload_file(path=tmp_file_path)
-                    contents_to_send.append(ai_file)
+                    # Tải file lên hệ thống AI đời mới
+                    ai_document = genai.upload_file(path=tmp_path)
+                    analysis_content.append(ai_document)
 
-                # Yêu cầu AI xử lý
-                response = model.generate_content(contents_to_send)
+                # Gọi AI thực hiện báo cáo
+                response = model.generate_content(analysis_content)
                 
-                # Dọn dẹp file rác
                 if uploaded_file:
-                    os.remove(tmp_file_path)
+                    os.remove(tmp_path)
 
-            st.success("✅ Đã hoàn thành Báo cáo Đánh giá Rủi ro!")
-            st.markdown("---")
-            st.write(response.text)
+            st.success("✅ Phân tích hoàn tất!")
+            st.markdown("### 📋 BÁO CÁO CHẨN ĐOÁN CHI TIẾT")
+            st.markdown(response.text)
 
         except Exception as e:
-
-            st.error(f"Đã xảy ra lỗi hệ thống: {e}")
-
-
-
+            st.error(f"Hệ thống gặp sự cố kết nối: {e}")
